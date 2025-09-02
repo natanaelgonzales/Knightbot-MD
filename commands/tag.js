@@ -23,11 +23,9 @@ async function tagCommand(sock, chatId, senderId, messageText, replyMessage) {
     }
 
     if (!isSenderAdmin) {
-        const stickerPath = './assets/sticktag.webp';  // Path to your sticker
-        if (fs.existsSync(stickerPath)) {
-            const stickerBuffer = fs.readFileSync(stickerPath);
-            await sock.sendMessage(chatId, { sticker: stickerBuffer });
-        }
+        await sock.sendMessage(chatId, {
+            text: '❌ Only admins can use this command.'
+        });
         return;
     }
 

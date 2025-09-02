@@ -10,7 +10,7 @@ This is a WhatsApp bot built using the Baileys library for group management, inc
 
 <div align="center"> 
   <a href="https://youtube.com/@mr_unique_hacker"> 
-    <img src="https://github.com/mruniquehacker/Knightbot-MD/blob/main/assets/bot_image.jpg" alt="Knight Bot" height="300"> 
+    <img src="https://via.placeholder.com/300x200/4A90E2/FFFFFF?text=Sereia+Bot" alt="Sereia Bot" height="300"> 
   </a> 
 </div>
 

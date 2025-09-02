@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+tmp/
+temp/
+logs/
+
+# Session files (will be mounted as volume)
+session/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+README.md
+*.md
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+
+# Test files
+test/
+tests/
+*.test.js
+*.spec.js
+
+# Coverage reports
+coverage/
+
+# Cache
+.cache/
+.parcel-cache/

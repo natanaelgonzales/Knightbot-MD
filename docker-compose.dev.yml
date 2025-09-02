@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  sereia-bot-dev:
+    build: .
+    container_name: sereia-bot-dev
+    restart: "no"  # Don't restart automatically during development
+    environment:
+      - NODE_ENV=development
+      - TZ=America/Sao_Paulo
+      # Add your environment variables here
+      # - SESSION_ID=your_session_id
+    volumes:
+      # Persist session data
+      - ./session:/app/session
+      # Persist logs
+      - ./logs:/app/logs
+      # Persist temporary files
+      - ./tmp:/app/tmp
+      # Mount source code for development (optional)
+      - ./index.js:/app/index.js
+      - ./main.js:/app/main.js
+      - ./settings.js:/app/settings.js
+    ports:
+      # Expose port for web interface if needed
+      - "3000:3000"
+    networks:
+      - sereia-bot-network
+    # Override command for development
+    command: ["npm", "start"]
+    # Remove resource limits for development
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 512M
+    #       cpus: '0.5'
+
+networks:
+  sereia-bot-network:
+    driver: bridge
+
+volumes:
+  session-data:
+  logs-data:
+  tmp-data:

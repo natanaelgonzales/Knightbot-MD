@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  sereia-bot:
+    build: .
+    container_name: sereia-bot
+    restart: unless-stopped
+    # Uncomment the line below if you want to run in development mode
+    # restart: "no"
+    environment:
+      - NODE_ENV=production
+      - TZ=America/Sao_Paulo
+      # Adicione suas variáveis de ambiente aqui
+      # - SESSION_ID=your_session_id
+      # - BOT_TOKEN=your_bot_token
+    volumes:
+      # Persistir dados da sessão
+      - ./session:/app/session
+      # Persistir logs
+      - ./logs:/app/logs
+      # Persistir arquivos temporários
+      - ./tmp:/app/tmp
+    ports:
+      # Expor porta se necessário para web interface
+      - "3000:3000"
+    networks:
+      - sereia-bot-network
+    # Configurações de recursos
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Bot is running')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  sereia-bot-network:
+    driver: bridge
+
+volumes:
+  session-data:
+  logs-data:
+  tmp-data:

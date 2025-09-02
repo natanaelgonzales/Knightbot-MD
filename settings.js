@@ -1,16 +1,16 @@
 const settings = {
-  packname: 'Knight Bot',
-  author: '‎',
-  botName: "Knight Bot",
-  botOwner: 'Professor', // Your name
-  ownerNumber: '919876543210', //Set your number here without + symbol, just add country code & number without any space
+  packname: 'Sereia Bot',
+  author: 'Sereia Bot Team',
+  botName: "Sereia Bot",
+  botOwner: 'Sereia Bot Team', // Your name
+  ownerNumber: '5531994172011', //Set your number here without + symbol, just add country code & number without any space
   giphyApiKey: 'qnl7ssQChTdPjsKta2Ax2LMaGXz303tq',
   commandMode: "public",
-  maxStoreMessages: 20, 
+  maxStoreMessages: 20,
   storeWriteInterval: 10000,
-  description: "This is a bot for managing group commands and automating tasks.",
+  description: "Sereia Bot - A powerful WhatsApp bot for managing groups and automating tasks.",
   version: "2.1.6",
-  updateZipUrl: "https://github.com/mruniquehacker/Knightbot-MD/archive/refs/heads/main.zip",
+  updateZipUrl: "", // Update URL removed
 };
 
 module.exports = settings;
