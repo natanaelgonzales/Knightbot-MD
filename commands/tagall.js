@@ -1,9 +1,8 @@
 const isAdmin = require('../lib/isAdmin');  // Move isAdmin to helpers
-
-async function tagAllCommand(sock, chatId, senderId) {
+async function tagAllCommand(sock, chatId, senderId, messageText) {
     try {
         const { isSenderAdmin, isBotAdmin } = await isAdmin(sock, chatId, senderId);
-        
+
         if (!isSenderAdmin && !isBotAdmin) {
             await sock.sendMessage(chatId, {
                 text: 'Only admins can use the .tagall command.'
@@ -20,15 +19,15 @@ async function tagAllCommand(sock, chatId, senderId) {
             return;
         }
 
-        // Create message with each member on a new line
-        let message = '🔊 *Group Members:*\n\n';
-        participants.forEach(participant => {
-            message += `@${participant.id.split('@')[0]}\n`; // Add \n for new line
-        });
+        // Copy message and resend tagging all members
+        let message_prefix = '🔊 *MENSAGEM:*\n\n';
+
+        // Use the messageText parameter instead of the message object
+        const finalMessage = messageText ? message_prefix + messageText : message_prefix + 'Mensagem para todos!';
 
         // Send message with mentions
         await sock.sendMessage(chatId, {
-            text: message,
+            text: finalMessage,
             mentions: participants.map(p => p.id)
         });
 

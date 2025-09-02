@@ -393,9 +393,10 @@ async function handleMessages(sock, messageUpdate, printLog) {
             case userMessage === '.owner':
                 await ownerCommand(sock, chatId);
                 break;
-            case userMessage === '.tagall':
+            case userMessage.startsWith('.tagall'):
                 if (isSenderAdmin || message.key.fromMe) {
-                    await tagAllCommand(sock, chatId, senderId, message);
+                    const messageText = rawText.slice(7).trim(); // Remove '.tagall' and get the rest
+                    await tagAllCommand(sock, chatId, senderId, messageText);
                 } else {
                     await sock.sendMessage(chatId, { text: 'Sorry, only group admins can use the .tagall command.', ...channelInfo }, { quoted: message });
                 }
