@@ -9,7 +9,7 @@ const settings = {
   maxStoreMessages: 20,
   storeWriteInterval: 10000,
   description: "Sereia Bot - A powerful WhatsApp bot for managing groups and automating tasks.",
-  version: "2.1.6",
+  version: "3.0.0",
   updateZipUrl: "", // Update URL removed
 };
 
