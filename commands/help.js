@@ -5,9 +5,8 @@ const path = require('path');
 async function helpCommand(sock, chatId, message) {
     const helpMessage = `
 ╔═══════════════════╗
-   *🤖 Sereia Bot*  
-   Version: *${settings.version || '2.0.5'}*
-   by ${settings.botOwner || 'Sereia Bot Team'}
+   *🧜‍♀️Sereia Bot*  
+   Version: *${settings.version || '2.1.0'}*
 ╚═══════════════════╝
 
 *Available Commands:*
@@ -50,8 +49,9 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .antibadword
 ║ ➤ .clear
 ║ ➤ .tag <message>
-║ ➤ .tagall
+║ ➤ .tagall <message>
 ║ ➤ .chatbot
+║ ➤ .link
 ║ ➤ .resetlink
 ║ ➤ .antitag <on/off>
 ║ ➤ .welcome <on/off>
@@ -94,16 +94,6 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .take <packname> 
 ║ ➤ .emojimix <emj1>+<emj2>
 ╚═══════════════════╝  
-
-╔═══════════════════╗
-🖼️ *Pies Commands*:
-║ ➤ .pies <country>
-║ ➤ .china 
-║ ➤ .indonesia 
-║ ➤ .japan 
-║ ➤ .korea 
-║ ➤ .hijab
-╚═══════════════════╝
 
 ╔═══════════════════╗
 🎮 *Game Commands*:
@@ -190,21 +180,6 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .jail 
 ║ ➤ .passed 
 ║ ➤ .triggered
-╚═══════════════════╝
-
-╔═══════════════════╗
-🖼️ *ANIME*:
-║ ➤ .neko
-║ ➤ .waifu
-║ ➤ .loli
-║ ➤ .nom 
-║ ➤ .poke 
-║ ➤ .cry 
-║ ➤ .kiss 
-║ ➤ .pat 
-║ ➤ .hug 
-║ ➤ .wink 
-║ ➤ .facepalm 
 ╚═══════════════════╝
 
 ╔═══════════════════╗

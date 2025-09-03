@@ -68,6 +68,7 @@ const wastedCommand = require('./commands/wasted');
 const shipCommand = require('./commands/ship');
 const groupInfoCommand = require('./commands/groupinfo');
 const resetlinkCommand = require('./commands/resetlink');
+const linkCommand = require('./commands/link');
 const staffCommand = require('./commands/staff');
 const unbanCommand = require('./commands/unban');
 const emojimixCommand = require('./commands/emojimix');
@@ -114,7 +115,7 @@ const ativarlistaCommand = require('./commands/ativarlista');
 global.packname = settings.packname;
 global.author = settings.author;
 // global.channelLink removed
-global.ytch = "Mr Unique Hacker";
+global.ytch = "";
 
 // Add this near the top of main.js with other global configurations
 // channelInfo removed - no more channel references
@@ -667,9 +668,16 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 }
                 await groupInfoCommand(sock, chatId, message);
                 break;
+            case userMessage === '.link' || userMessage === '.grouplink' || userMessage === '.linkgrupo':
+                if (!isGroup) {
+                    await sock.sendMessage(chatId, { text: 'Este comando só pode ser usado em grupos!' });
+                    return;
+                }
+                await linkCommand(sock, chatId, senderId);
+                break;
             case userMessage === '.resetlink' || userMessage === '.revoke' || userMessage === '.anularlink':
                 if (!isGroup) {
-                    await sock.sendMessage(chatId, { text: 'This command can only be used in groups!', ...channelInfo });
+                    await sock.sendMessage(chatId, { text: 'Este comando só pode ser usado em grupos!' });
                     return;
                 }
                 await resetlinkCommand(sock, chatId, senderId);
