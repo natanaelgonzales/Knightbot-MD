@@ -1,3 +1,4 @@
+const isAdmin = require('../lib/isAdmin');  // Move isAdmin to helpers
 const fs = require('fs');
 const path = require('path');
 
@@ -44,16 +45,14 @@ async function pausarlistaCommand(sock, chatId, message, args) {
             return;
         }
 
-        // Verificar se o usuário é admin
-        const isAdmin = await require('../lib/isAdmin')(sock, chatId, message.key.participant || message.key.remoteJid);
+        const { isSenderAdmin, isBotAdmin } = await isAdmin(sock, chatId, senderId);
 
-        if (!isAdmin.isSenderAdmin && !isAdmin.isBotAdmin) {
+        if (!isSenderAdmin && !isBotAdmin) {
             await sock.sendMessage(chatId, {
-                text: '❌ Apenas administradores podem usar este comando.'
-            }, { quoted: message });
+                text: 'Somente administradores podem usar este comando.'
+            });
             return;
         }
-
         if (args.length < 1) {
             await sock.sendMessage(chatId, {
                 text: '❌ *Uso:* .pausarlista <id>\n\nUse .listarlistas para ver os IDs disponíveis.'

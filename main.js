@@ -391,22 +391,22 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 break;
             case userMessage.startsWith('.criarlista'):
                 const criarlistaArgs = rawText.slice(11).trim().split(' ');
-                await criarlistaCommand(sock, chatId, message, criarlistaArgs);
+                await criarlistaCommand(sock, chatId, senderId, message, criarlistaArgs);
                 break;
             case userMessage === '.listarlistas':
                 await listarlistasCommand(sock, chatId, message);
                 break;
             case userMessage.startsWith('.removerlista'):
                 const removerlistaArgs = rawText.slice(13).trim().split(' ');
-                await removerlistaCommand(sock, chatId, message, removerlistaArgs);
+                await removerlistaCommand(sock, chatId, senderId, message, removerlistaArgs);
                 break;
             case userMessage.startsWith('.pausarlista'):
                 const pausarlistaArgs = rawText.slice(12).trim().split(' ');
-                await pausarlistaCommand(sock, chatId, message, pausarlistaArgs);
+                await pausarlistaCommand(sock, chatId, senderId, message, pausarlistaArgs);
                 break;
             case userMessage.startsWith('.ativarlista'):
                 const ativarlistaArgs = rawText.slice(12).trim().split(' ');
-                await ativarlistaCommand(sock, chatId, message, ativarlistaArgs);
+                await ativarlistaCommand(sock, chatId, senderId, message, ativarlistaArgs);
                 break;
             case userMessage.startsWith('.tagall'):
                 if (isSenderAdmin || message.key.fromMe) {

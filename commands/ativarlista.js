@@ -1,3 +1,4 @@
+const isAdmin = require('../lib/isAdmin');  // Move isAdmin to helpers
 const fs = require('fs');
 const path = require('path');
 const cron = require('node-cron');
@@ -72,13 +73,12 @@ async function ativarlistaCommand(sock, chatId, message, args) {
             return;
         }
 
-        // Verificar se o usuário é admin
-        const isAdmin = await require('../lib/isAdmin')(sock, chatId, message.key.participant || message.key.remoteJid);
+        const { isSenderAdmin, isBotAdmin } = await isAdmin(sock, chatId, senderId);
 
-        if (!isAdmin.isSenderAdmin && !isAdmin.isBotAdmin) {
+        if (!isSenderAdmin && !isBotAdmin) {
             await sock.sendMessage(chatId, {
-                text: '❌ Apenas administradores podem usar este comando.'
-            }, { quoted: message });
+                text: 'Somente administradores podem usar este comando.'
+            });
             return;
         }
 
