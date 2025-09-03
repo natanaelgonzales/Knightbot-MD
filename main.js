@@ -111,6 +111,9 @@ const listarlistasCommand = require('./commands/listarlistas');
 const removerlistaCommand = require('./commands/removerlista');
 const pausarlistaCommand = require('./commands/pausarlista');
 const ativarlistaCommand = require('./commands/ativarlista');
+const groupmenuCommand = require('./commands/groupmenu');
+const privatechatCommand = require('./commands/privatechat');
+const groupSettings = require('./lib/groupSettings');
 // Global settings
 global.packname = settings.packname;
 global.author = settings.author;
@@ -214,6 +217,21 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 await handleTagDetection(sock, chatId, message, senderId);
             }
             return;
+        }
+
+        // Extrair comando base (sem argumentos)
+        const commandBase = userMessage.split(' ')[0];
+
+        // Verificar se o comando está habilitado para o grupo (apenas para grupos)
+        if (isGroup && !groupSettings.isCommandEnabled(chatId, commandBase)) {
+            // Comandos especiais que sempre funcionam
+            const alwaysAllowedCommands = ['.groupmenu', '.help', '.menu', '.ping', '.alive'];
+            if (!alwaysAllowedCommands.includes(commandBase)) {
+                await sock.sendMessage(chatId, {
+                    text: `❌ Comando "${commandBase}" não está habilitado para este grupo.\n\nUse .groupmenu para configurar os comandos disponíveis.`
+                }, { quoted: message });
+                return;
+            }
         }
 
         // List of admin commands
@@ -407,6 +425,14 @@ async function handleMessages(sock, messageUpdate, printLog) {
             case userMessage.startsWith('.ativarlista'):
                 const ativarlistaArgs = rawText.slice(12).trim().split(' ');
                 await ativarlistaCommand(sock, chatId, senderId, message, ativarlistaArgs);
+                break;
+            case userMessage.startsWith('.groupmenu'):
+                const groupmenuArgs = rawText.slice(10).trim().split(' ');
+                await groupmenuCommand(sock, chatId, senderId, message, groupmenuArgs);
+                break;
+            case userMessage.startsWith('.privatechat'):
+                const privatechatArgs = rawText.slice(12).trim().split(' ');
+                await privatechatCommand(sock, chatId, senderId, message, privatechatArgs);
                 break;
             case userMessage.startsWith('.tagall'):
                 if (isSenderAdmin || message.key.fromMe) {

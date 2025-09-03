@@ -1,206 +1,96 @@
 const settings = require('../settings');
+const groupSettings = require('../lib/groupSettings');
 const fs = require('fs');
 const path = require('path');
 
 async function helpCommand(sock, chatId, message) {
-    const helpMessage = `
+    try {
+        const isGroup = chatId.endsWith('@g.us');
+
+        // Comandos que sempre estão disponíveis
+        const alwaysAvailable = ['.help', '.menu', '.ping', '.alive'];
+
+        let enabledCommands = [];
+
+        if (isGroup) {
+            // Para grupos, obter comandos habilitados
+            const groupSettingsData = groupSettings.getGroupSettings(chatId);
+            enabledCommands = groupSettingsData.enabledCommands || [];
+        } else {
+            // Para chat privado, mostrar todos os comandos
+            enabledCommands = groupSettings.getAvailableCommands();
+        }
+
+        // Combinar comandos sempre disponíveis com habilitados
+        const allAvailableCommands = [...new Set([...alwaysAvailable, ...enabledCommands])];
+
+        // Organizar comandos por categoria
+        const commandCategories = {
+            '🌐 Geral': ['.help', '.menu', '.ping', '.alive', '.owner', '.joke', '.quote', '.fact', '.weather', '.news', '.attp', '.lyrics', '.8ball', '.groupinfo', '.staff', '.admins', '.vv', '.trt', '.ss', '.jid'],
+            '👮‍♂️ Admin': ['.ban', '.unban', '.promote', '.demote', '.mute', '.unmute', '.delete', '.del', '.kick', '.warnings', '.warn', '.antilink', '.antibadword', '.clear', '.tag', '.tagall', '.chatbot', '.link', '.resetlink', '.antitag', '.welcome', '.goodbye'],
+            '📅 Agendamento': ['.criarlista', '.listarlistas', '.removerlista', '.pausarlista', '.ativarlista'],
+            '🎨 Imagem/Sticker': ['.blur', '.simage', '.sticker', '.removebg', '.remini', '.crop', '.tgsticker', '.meme', '.take', '.emojimix'],
+            '🎮 Jogos': ['.tictactoe', '.hangman', '.guess', '.trivia', '.answer', '.truth', '.dare'],
+            '🤖 IA': ['.gpt', '.gemini', '.imagine', '.flux'],
+            '🎯 Diversão': ['.compliment', '.insult', '.flirt', '.shayari', '.goodnight', '.roseday', '.character', '.wasted', '.ship', '.simp', '.stupid'],
+            '🔤 Textmaker': ['.metallic', '.ice', '.snow', '.impressive', '.matrix', '.light', '.neon', '.devil', '.purple', '.thunder', '.leaves', '.1917', '.arena', '.hacker', '.sand', '.blackpink', '.glitch', '.fire'],
+            '📥 Downloader': ['.play', '.song', '.instagram', '.facebook', '.tiktok', '.video', '.ytmp4'],
+            '🧩 MISC': ['.heart', '.horny', '.circle', '.lgbt', '.lolice', '.its-so-stupid', '.namecard', '.oogway', '.tweet', '.ytcomment', '.comrade', '.gay', '.glass', '.jail', '.passed', '.triggered'],
+            '💻 Github': ['.git', '.github', '.sc', '.script', '.repo'],
+            '🔒 Owner': ['.mode', '.autostatus', '.clearsession', '.antidelete', '.cleartmp', '.update', '.setpp', '.autoreact', '.autotyping', '.autoread']
+        };
+
+        // Construir mensagem de ajuda
+        let helpMessage = `
 ╔═══════════════════╗
    *🧜‍♀️Sereia Bot*  
    Version: *${settings.version || '2.1.0'}*
 ╚═══════════════════╝
 
-*Available Commands:*
+${isGroup ?
+                `📋 *Comandos Habilitados para este Grupo:*\n` :
+                `📋 *Todos os Comandos Disponíveis:*\n`}
 
-╔═══════════════════╗
-🌐 *General Commands*:
-║ ➤ .help or .menu
-║ ➤ .ping
-║ ➤ .alive
-║ ➤ .tts <text>
-║ ➤ .owner
-║ ➤ .joke
-║ ➤ .quote
-║ ➤ .fact
-║ ➤ .weather <city>
-║ ➤ .news
-║ ➤ .attp <text>
-║ ➤ .lyrics <song_title>
-║ ➤ .8ball <question>
-║ ➤ .groupinfo
-║ ➤ .staff or .admins 
-║ ➤ .vv
-║ ➤ .trt <text> <lang>
-║ ➤ .ss <link>
-║ ➤ .jid
-╚═══════════════════╝ 
+`;
 
-╔═══════════════════╗
-👮‍♂️ *Admin Commands*:
-║ ➤ .ban @user
-║ ➤ .promote @user
-║ ➤ .demote @user
-║ ➤ .mute <minutes>
-║ ➤ .unmute
-║ ➤ .delete or .del
-║ ➤ .kick @user
-║ ➤ .warnings @user
-║ ➤ .warn @user
-║ ➤ .antilink
-║ ➤ .antibadword
-║ ➤ .clear
-║ ➤ .tag <message>
-║ ➤ .tagall <message>
-║ ➤ .chatbot
-║ ➤ .link
-║ ➤ .resetlink
-║ ➤ .antitag <on/off>
-║ ➤ .welcome <on/off>
-║ ➤ .goodbye <on/off>
-╚═══════════════════╝
+        // Adicionar cada categoria que tem comandos habilitados
+        for (const [category, commands] of Object.entries(commandCategories)) {
+            const availableInCategory = commands.filter(cmd => allAvailableCommands.includes(cmd));
 
-╔═══════════════════╗
-📅 *Agendamento*:
-║ ➤ .criarlista <dia> <hora> <template>
-║ ➤ .listarlistas
-║ ➤ .removerlista <id>
-║ ➤ .pausarlista <id>
-║ ➤ .ativarlista <id>
-╚═══════════════════╝
+            if (availableInCategory.length > 0) {
+                helpMessage += `╔═══════════════════╗\n${category}:\n`;
 
-╔═══════════════════╗
-🔒 *Owner Commands*:
-║ ➤ .mode
-║ ➤ .autostatus
-║ ➤ .clearsession
-║ ➤ .antidelete
-║ ➤ .cleartmp
-║ ➤ .update
-║ ➤ .setpp <reply to image>
-║ ➤ .autoreact
-║ ➤ .autotyping <on/off>
-║ ➤ .autoread <on/off>
-╚═══════════════════╝
+                availableInCategory.forEach(cmd => {
+                    helpMessage += `║ ➤ ${cmd}\n`;
+                });
 
-╔═══════════════════╗
-🎨 *Image/Sticker Commands*:
-║ ➤ .blur <image>
-║ ➤ .simage <reply to sticker>
-║ ➤ .sticker <reply to image>
-║ ➤ .removebg
-║ ➤ .remini
-║ ➤ .crop <reply to image>
-║ ➤ .tgsticker <Link>
-║ ➤ .meme
-║ ➤ .take <packname> 
-║ ➤ .emojimix <emj1>+<emj2>
-╚═══════════════════╝  
+                helpMessage += `╚═══════════════════╝\n\n`;
+            }
+        }
 
-╔═══════════════════╗
-🎮 *Game Commands*:
-║ ➤ .tictactoe @user
-║ ➤ .hangman
-║ ➤ .guess <letter>
-║ ➤ .trivia
-║ ➤ .answer <answer>
-║ ➤ .truth
-║ ➤ .dare
-╚═══════════════════╝
+        // Adicionar informações sobre configuração se for grupo
+        if (isGroup) {
+            const totalCommands = groupSettings.getAvailableCommands().length;
+            const enabledCount = enabledCommands.length;
 
-╔═══════════════════╗
-🤖 *AI Commands*:
-║ ➤ .gpt <question>
-║ ➤ .gemini <question>
-║ ➤ .imagine <prompt>
-║ ➤ .flux <prompt>
-╚═══════════════════╝
+            helpMessage += `📊 *Status:* ${enabledCount}/${totalCommands} comandos habilitados\n\n`;
+            helpMessage += `💡 *Para configurar comandos:*\n`;
+            helpMessage += `• .groupmenu - Configurar comandos do grupo\n`;
+            helpMessage += `• .groupmenu status - Ver status atual\n\n`;
+        }
 
-╔═══════════════════╗
-🎯 *Fun Commands*:
-║ ➤ .compliment @user
-║ ➤ .insult @user
-║ ➤ .flirt 
-║ ➤ .shayari
-║ ➤ .goodnight
-║ ➤ .roseday
-║ ➤ .character @user
-║ ➤ .wasted @user
-║ ➤ .ship @user
-║ ➤ .simp @user
-║ ➤ .stupid @user [text]
-╚═══════════════════╝
+        helpMessage += `Thanks for using Sereia Bot! 🧜‍♀️`;
 
-╔═══════════════════╗
-🔤 *Textmaker*:
-║ ➤ .metallic <text>
-║ ➤ .ice <text>
-║ ➤ .snow <text>
-║ ➤ .impressive <text>
-║ ➤ .matrix <text>
-║ ➤ .light <text>
-║ ➤ .neon <text>
-║ ➤ .devil <text>
-║ ➤ .purple <text>
-║ ➤ .thunder <text>
-║ ➤ .leaves <text>
-║ ➤ .1917 <text>
-║ ➤ .arena <text>
-║ ➤ .hacker <text>
-║ ➤ .sand <text>
-║ ➤ .blackpink <text>
-║ ➤ .glitch <text>
-║ ➤ .fire <text>
-╚═══════════════════╝
-
-╔═══════════════════╗
-📥 *Downloader*:
-║ ➤ .play <song_name>
-║ ➤ .song <song_name>
-║ ➤ .instagram <link>
-║ ➤ .facebook <link>
-║ ➤ .tiktok <link>
-║ ➤ .video <song name>
-║ ➤ .ytmp4 <Link>
-╚═══════════════════╝
-
-╔═══════════════════╗
-🧩 *MISC*:
-║ ➤ .heart
-║ ➤ .horny
-║ ➤ .circle
-║ ➤ .lgbt
-║ ➤ .lolice
-║ ➤ .its-so-stupid
-║ ➤ .namecard 
-║ ➤ .oogway
-║ ➤ .tweet
-║ ➤ .ytcomment 
-║ ➤ .comrade 
-║ ➤ .gay 
-║ ➤ .glass 
-║ ➤ .jail 
-║ ➤ .passed 
-║ ➤ .triggered
-╚═══════════════════╝
-
-╔═══════════════════╗
-💻 *Github Commands:*
-║ ➤ .git
-║ ➤ .github
-║ ➤ .sc
-║ ➤ .script
-║ ➤ .repo
-╚═══════════════════╝
-
-Thanks for using Sereia Bot! 🧜‍♀️`;
-
-    try {
-        // Send help message without image for lighter flow
+        // Enviar mensagem
         await sock.sendMessage(chatId, {
             text: helpMessage
-        }, { quoted: message });
+        }, message ? { quoted: message } : {});
+
     } catch (error) {
         console.error('Error in help command:', error);
-        await sock.sendMessage(chatId, { text: helpMessage });
+        await sock.sendMessage(chatId, {
+            text: '❌ Erro ao carregar comandos. Tente novamente.'
+        }, message ? { quoted: message } : {});
     }
 }
 

@@ -1,4 +1,5 @@
 const isAdmin = require('../lib/isAdmin');
+const groupSettings = require('../lib/groupSettings');
 const fs = require('fs');
 const path = require('path');
 const cron = require('node-cron');
@@ -62,26 +63,119 @@ function dayToNumber(dayStr) {
 }
 
 // Função para criar template de mensagem
-function createMessageTemplate(template, date) {
+function createMessageTemplate(template, scheduledDay, scheduledTime) {
     const now = new Date();
-    const currentDate = date || now;
 
-    return template
-        .replace(/{data}/g, currentDate.toLocaleDateString('pt-BR'))
-        .replace(/{hora}/g, currentDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
-        .replace(/{dia}/g, currentDate.toLocaleDateString('pt-BR', { weekday: 'long' }))
-        .replace(/{mes}/g, currentDate.toLocaleDateString('pt-BR', { month: 'long' }))
-        .replace(/{ano}/g, currentDate.getFullYear());
+    // Usar a data atual como referência (quando o agendamento foi criado)
+    const referenceDate = new Date(now);
+
+    // Processar variáveis com operações matemáticas
+    let processedTemplate = template;
+
+    // Processar {data+/-N} ou {data}
+    processedTemplate = processedTemplate.replace(/{data([+-]\d+)?}/g, (match, operation) => {
+        const date = new Date(referenceDate);
+        if (operation) {
+            const days = parseInt(operation);
+            date.setDate(date.getDate() + days);
+        }
+        return date.toLocaleDateString('pt-BR');
+    });
+
+    // Processar {dia+/-N} ou {dia}
+    processedTemplate = processedTemplate.replace(/{dia([+-]\d+)?}/g, (match, operation) => {
+        const date = new Date(referenceDate);
+        if (operation) {
+            const days = parseInt(operation);
+            date.setDate(date.getDate() + days);
+        }
+        return date.toLocaleDateString('pt-BR', { weekday: 'long' });
+    });
+
+    // Processar {mes+/-N} ou {mes}
+    processedTemplate = processedTemplate.replace(/{mes([+-]\d+)?}/g, (match, operation) => {
+        const date = new Date(referenceDate);
+        if (operation) {
+            const days = parseInt(operation);
+            date.setDate(date.getDate() + days);
+        }
+        return date.toLocaleDateString('pt-BR', { month: 'long' });
+    });
+
+    // Processar {ano+/-N} ou {ano}
+    processedTemplate = processedTemplate.replace(/{ano([+-]\d+)?}/g, (match, operation) => {
+        const date = new Date(referenceDate);
+        if (operation) {
+            const days = parseInt(operation);
+            date.setDate(date.getDate() + days);
+        }
+        return date.getFullYear().toString();
+    });
+
+    // Variáveis simples (sem operações)
+    processedTemplate = processedTemplate
+        .replace(/{hora}/g, scheduledTime);
+
+    return processedTemplate;
 }
 
-async function criarlistaCommand(sock, chatId, senderId, message, args) {
+// Função para calcular a próxima data do dia agendado
+function getNextScheduledDate(scheduledDay, scheduledTime) {
+    const now = new Date();
+    const today = now.getDay(); // 0 = domingo, 1 = segunda, etc.
+
+    // Mapear dias da semana
+    const dayMap = {
+        'domingo': 0,
+        'segunda': 1,
+        'terça': 2,
+        'quarta': 3,
+        'quinta': 4,
+        'sexta': 5,
+        'sábado': 6
+    };
+
+    const scheduledDayNumber = dayMap[scheduledDay.toLowerCase()];
+    if (scheduledDayNumber === undefined) {
+        return now; // Fallback para hoje se dia inválido
+    }
+
+    // Calcular dias até a próxima ocorrência
+    let daysUntilNext = scheduledDayNumber - today;
+    if (daysUntilNext <= 0) {
+        daysUntilNext += 7; // Próxima semana
+    }
+
+    // Criar a data da próxima ocorrência
+    const nextDate = new Date(now);
+    nextDate.setDate(now.getDate() + daysUntilNext);
+
+    // Definir a hora agendada
+    const [hours, minutes] = scheduledTime.split(':');
+    nextDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+    return nextDate;
+}
+
+async function criarlistaCommand(sock, chatId, senderId, message, args, isPrivateCall = false) {
     try {
+        // Validar parâmetros
+        if (!sock || !chatId || !senderId) {
+            console.error('Parâmetros inválidos para criarlistaCommand');
+            return;
+        }
+
+        // Garantir que message seja um objeto válido
+        if (!message || typeof message !== 'object') {
+            message = { key: { participant: senderId, remoteJid: chatId } };
+        }
+
         const isGroup = chatId.endsWith('@g.us');
 
         if (!isGroup) {
             await sock.sendMessage(chatId, {
                 text: '❌ Este comando só pode ser usado em grupos.'
-            }, { quoted: message });
+            }, message ? { quoted: message } : {});
             return;
         }
 
@@ -95,14 +189,26 @@ async function criarlistaCommand(sock, chatId, senderId, message, args) {
         }
 
         if (args.length < 3) {
-            const helpText = `
+            if (!isPrivateCall) {
+                const helpText = `
 🧜‍♀️ *Sereia Bot - Criar Lista de Agendamento*
 
 *Uso:* .criarlista <dia> <hora> [marcar] <template>
+*Uso com alias:* .criarlista <alias> <dia> <hora> [marcar] <template>
 
 *Exemplos:*
 .criarlista quarta 12:00 Lembrete: Reunião às {hora} do dia {data}
 .criarlista quarta 12:00 marcar Lembrete: Reunião às {hora} do dia {data}
+.criarlista "Meu Grupo" quarta 12:00 Lembrete: Reunião às {hora}
+
+*Exemplo dinâmico:*
+Se hoje é segunda (08/09) e você agenda:
+.criarlista quarta 21:00 Reunião na {dia} {data} às {hora}
+A mensagem será: "Reunião na segunda-feira 08/09 às 21:00"
+
+*Exemplo com operações:*
+.criarlista quarta 21:00 Reunião na {dia+2} {data+2} às {hora}
+Se hoje é segunda (08/09), a mensagem será: "Reunião na quarta-feira 10/09 às 21:00"
 
 *Dias válidos:*
 • segunda, terça, quarta, quinta, sexta, sábado, domingo
@@ -116,26 +222,51 @@ async function criarlistaCommand(sock, chatId, senderId, message, args) {
 • Sem "marcar": envia mensagem normal
 
 *Variáveis do template:*
-• {data} - Data atual
-• {hora} - Hora atual
-• {dia} - Dia da semana
+• {data} - Data atual (quando o agendamento foi criado)
+• {data+N} - Data atual + N dias (ex: {data+2} = +2 dias)
+• {data-N} - Data atual - N dias (ex: {data-1} = -1 dia)
+• {hora} - Hora agendada
+• {dia} - Dia da semana atual
+• {dia+N} - Dia da semana + N dias (ex: {dia+2})
+• {dia-N} - Dia da semana - N dias (ex: {dia-1})
 • {mes} - Mês atual
+• {mes+N} - Mês + N dias (ex: {mes+2})
+• {mes-N} - Mês - N dias (ex: {mes-1})
 • {ano} - Ano atual
+• {ano+N} - Ano + N dias (ex: {ano+2})
+• {ano-N} - Ano - N dias (ex: {ano-1})
 
 *Comandos relacionados:*
 • .listarlistas - Ver todas as listas
 • .removerlista <id> - Remover uma lista
 • .pausarlista <id> - Pausar uma lista
 • .ativarlista <id> - Ativar uma lista
+• .groupmenu - Configurar comandos do grupo
             `;
 
-            await sock.sendMessage(chatId, {
-                text: helpText
-            }, { quoted: message });
+                await sock.sendMessage(chatId, {
+                    text: helpText
+                }, message ? { quoted: message } : {});
+            }
             return;
         }
 
-        const [day, time, ...templateParts] = args;
+        // Verificar se o primeiro argumento é um alias
+        let targetChatId = chatId;
+        let day, time, templateParts;
+
+        // Verificar se o primeiro argumento é um alias (entre aspas ou sem espaços)
+        const firstArg = args[0];
+        const possibleAlias = groupSettings.getChatIdByAlias(firstArg);
+
+        if (possibleAlias) {
+            // É um alias, usar o chatId do alias
+            targetChatId = possibleAlias;
+            [day, time, ...templateParts] = args.slice(1);
+        } else {
+            // Não é um alias, usar o chatId atual
+            [day, time, ...templateParts] = args;
+        }
 
         // Verificar se tem o parâmetro "marcar"
         const shouldMention = templateParts[0] === 'marcar';
@@ -143,26 +274,29 @@ async function criarlistaCommand(sock, chatId, senderId, message, args) {
 
         // Validar dia
         if (!validateDay(day)) {
-            await sock.sendMessage(chatId, {
-                text: '❌ Dia inválido. Use: segunda, terça, quarta, quinta, sexta, sábado, domingo'
-            }, { quoted: message });
-            return;
+            if (!isPrivateCall) {
+                await sock.sendMessage(chatId, {
+                    text: '❌ Dia inválido. Use: segunda, terça, quarta, quinta, sexta, sábado, domingo'
+                }, message ? { quoted: message } : {});
+            } return;
         }
 
         // Validar horário
         if (!validateTime(time)) {
-            await sock.sendMessage(chatId, {
-                text: '❌ Horário inválido. Use formato HH:MM (ex: 12:00, 14:30)'
-            }, { quoted: message });
-            return;
+            if (!isPrivateCall) {
+                await sock.sendMessage(chatId, {
+                    text: '❌ Horário inválido. Use formato HH:MM (ex: 12:00, 14:30)'
+                }, message ? { quoted: message } : {});
+            } return;
         }
 
         // Validar template
         if (!template || template.length < 5) {
-            await sock.sendMessage(chatId, {
-                text: '❌ Template muito curto. Mínimo 5 caracteres.'
-            }, { quoted: message });
-            return;
+            if (!isPrivateCall) {
+                await sock.sendMessage(chatId, {
+                    text: '❌ Template muito curto. Mínimo 5 caracteres.'
+                }, message ? { quoted: message } : {});
+            } return;
         }
 
         // Carregar dados existentes
@@ -174,7 +308,7 @@ async function criarlistaCommand(sock, chatId, senderId, message, args) {
         // Criar entrada de agendamento
         const schedule = {
             id: listId,
-            chatId: chatId,
+            chatId: targetChatId,
             day: day.toLowerCase(),
             dayNumber: dayToNumber(day),
             time: time,
@@ -188,11 +322,11 @@ async function criarlistaCommand(sock, chatId, senderId, message, args) {
         };
 
         // Adicionar ao grupo de agendamentos
-        if (!data.schedules[chatId]) {
-            data.schedules[chatId] = [];
+        if (!data.schedules[targetChatId]) {
+            data.schedules[targetChatId] = [];
         }
 
-        data.schedules[chatId].push(schedule);
+        data.schedules[targetChatId].push(schedule);
 
         // Salvar dados
         if (saveScheduleData(data)) {
@@ -204,10 +338,10 @@ async function criarlistaCommand(sock, chatId, senderId, message, args) {
             const task = cron.schedule(cronExpression, async () => {
                 try {
                     const currentData = loadScheduleData();
-                    const currentSchedule = currentData.schedules[chatId]?.find(s => s.id === listId);
+                    const currentSchedule = currentData.schedules[targetChatId]?.find(s => s.id === listId);
 
                     if (currentSchedule && currentSchedule.active) {
-                        const messageText = createMessageTemplate(currentSchedule.template);
+                        const messageText = createMessageTemplate(currentSchedule.template, currentSchedule.day, currentSchedule.time);
 
                         // Preparar mensagem com ou sem mentions
                         let messageOptions = { text: messageText };
@@ -215,7 +349,7 @@ async function criarlistaCommand(sock, chatId, senderId, message, args) {
                         if (currentSchedule.shouldMention) {
                             try {
                                 // Obter participantes do grupo
-                                const groupMetadata = await sock.groupMetadata(chatId);
+                                const groupMetadata = await sock.groupMetadata(targetChatId);
                                 const participants = groupMetadata.participants;
 
                                 messageOptions.mentions = participants.map(p => p.id);
@@ -224,14 +358,14 @@ async function criarlistaCommand(sock, chatId, senderId, message, args) {
                             }
                         }
 
-                        await sock.sendMessage(chatId, messageOptions);
+                        await sock.sendMessage(targetChatId, messageOptions);
 
                         // Atualizar estatísticas
                         currentSchedule.lastSent = new Date().toISOString();
                         currentSchedule.totalSent++;
                         saveScheduleData(currentData);
 
-                        console.log(`📅 Mensagem agendada enviada para ${chatId}: ${messageText}${currentSchedule.shouldMention ? ' (com mentions)' : ''}`);
+                        console.log(`📅 Mensagem agendada enviada para ${targetChatId}: ${messageText}${currentSchedule.shouldMention ? ' (com mentions)' : ''}`);
                     }
                 } catch (error) {
                     console.error('Erro ao enviar mensagem agendada:', error);
@@ -248,6 +382,7 @@ async function criarlistaCommand(sock, chatId, senderId, message, args) {
             global.scheduleTasks[listId] = task;
 
             const mentionStatus = shouldMention ? '✅ Sim (marcará todos)' : '❌ Não';
+            const targetInfo = targetChatId !== chatId ? `\n🎯 *Grupo alvo:* ${firstArg}` : '';
 
             const successMessage = `
 ✅ *Lista de agendamento criada com sucesso!*
@@ -256,7 +391,7 @@ async function criarlistaCommand(sock, chatId, senderId, message, args) {
 📅 *Dia:* ${day.charAt(0).toUpperCase() + day.slice(1)}
 ⏰ *Horário:* ${time}
 📝 *Template:* ${template}
-👥 *Marcar todos:* ${mentionStatus}
+👥 *Marcar todos:* ${mentionStatus}${targetInfo}
 
 🧜‍♀️ A mensagem será enviada automaticamente toda ${day} às ${time}.
 
@@ -266,21 +401,30 @@ async function criarlistaCommand(sock, chatId, senderId, message, args) {
 • .pausarlista ${listId} - Pausar esta lista
             `;
 
-            await sock.sendMessage(chatId, {
-                text: successMessage
-            }, { quoted: message });
+            // Só enviar mensagem de sucesso se não for chamada privada
+            if (!isPrivateCall) {
+                await sock.sendMessage(chatId, {
+                    text: successMessage
+                }, message ? { quoted: message } : {});
+            }
 
         } else {
-            await sock.sendMessage(chatId, {
-                text: '❌ Erro ao salvar a lista de agendamento.'
-            }, { quoted: message });
+            // Só enviar mensagem de erro se não for chamada privada
+            if (!isPrivateCall) {
+                await sock.sendMessage(chatId, {
+                    text: '❌ Erro ao salvar a lista de agendamento.'
+                }, message ? { quoted: message } : {});
+            }
         }
 
     } catch (error) {
         console.error('Erro no comando criarlista:', error);
-        await sock.sendMessage(chatId, {
-            text: '❌ Erro interno. Tente novamente.'
-        }, { quoted: message });
+        // Só enviar mensagem de erro se não for chamada privada
+        if (!isPrivateCall) {
+            await sock.sendMessage(chatId, {
+                text: '❌ Erro interno. Tente novamente.'
+            }, message ? { quoted: message } : {});
+        }
     }
 }
 
