@@ -20,6 +20,8 @@ services:
       - ./logs:/app/logs
       # Persistir arquivos temporários
       - ./tmp:/app/tmp
+      # Persistir dados do bot
+      - ./data:/app/data
     ports:
       # Expor porta se necessário para web interface
       - "3000:3000"
