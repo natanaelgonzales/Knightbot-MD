@@ -12,7 +12,7 @@ async function privatechatCommand(sock, chatId, senderId, message, args) {
             return;
         }
 
-        if (args.length === 0) {
+        if (args.length === 0 || args[0] === 'menu') {
             // Mostrar menu principal do chat privado
             const groupsWithAliases = groupSettings.listGroupsWithAliases();
             const groupList = Object.keys(groupsWithAliases);
